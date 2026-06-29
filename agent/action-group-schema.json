@@ -1,0 +1,55 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Plant Floor Maintenance Actions",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/create-work-order": {
+      "post": {
+        "summary": "Create a maintenance work order for a machine fault",
+        "description": "Creates a maintenance work order for a detected equipment fault, tracks the fault occurrence count for the machine, and returns the work order details.",
+        "operationId": "createWorkOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "machine_id": {"type": "string", "description": "The unique identifier of the machine, e.g. Line3-Motor7"},
+                  "fault_type": {"type": "string", "description": "The type of fault detected, e.g. 'high vibration' or 'overheating'"},
+                  "severity": {"type": "string", "description": "The severity level of the fault as stated in the SOP, e.g. HIGH or MEDIUM"}
+                },
+                "required": ["machine_id", "fault_type", "severity"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Work order created successfully, including occurrence count and status",
+            "content": {"application/json": {"schema": {"type": "object", "description": "The created work order details"}}}
+          }
+        }
+      }
+    },
+    "/check-fault-history": {
+      "get": {
+        "summary": "Check how many times a fault has occurred for a machine",
+        "description": "Retrieves the historical occurrence count of a specific fault type for a given machine, used to decide whether the issue is recurring and should be escalated.",
+        "operationId": "checkFaultHistory",
+        "parameters": [
+          {"name": "machine_id", "in": "query", "required": true, "description": "The unique identifier of the machine, e.g. Line3-Motor7", "schema": {"type": "string"}},
+          {"name": "fault_type", "in": "query", "required": true, "description": "The type of fault to check history for, e.g. 'high vibration' or 'overheating'", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "The occurrence count for the specified machine and fault type",
+            "content": {"application/json": {"schema": {"type": "object", "description": "Fault history details including occurrence count"}}}
+          }
+        }
+      }
+    }
+  }
+}
