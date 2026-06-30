@@ -5,8 +5,6 @@ Automotive & Manufacturing use cases.
 
 ## Architecture
 
-![Bedrock Agent Architecture](docs/architecture-diagram.png)
-
 - **S3**: stores maintenance SOP documents
 - **Amazon Bedrock Knowledge Base** (OpenSearch Serverless vector store): RAG retrieval over SOPs
 - **AWS Lambda**: orchestrates fault detection, KB retrieval, and reasoning
@@ -24,7 +22,7 @@ Automotive & Manufacturing use cases.
 
 ## Part 2: Native Bedrock Agent
 
-![Bedrock Agent AWS Architecture](docs/aws-architecture-diagram.png)
+![Bedrock Agent Architecture](docs/architecture-diagram.png)
 
 Upgraded the architecture from a single orchestrating Lambda to a native Amazon Bedrock Agent that owns the reasoning loop itself:
 
