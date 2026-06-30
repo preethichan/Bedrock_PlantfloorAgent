@@ -22,19 +22,37 @@ Automotive & Manufacturing use cases.
 5. Claude 3.5 Sonnet generates a work order, deciding whether to escalate based on recurrence and severity
 6. Work order is published via SNS
 
-## Part 2: Native Bedrock Agent (in progress)
+## Part 2: Native Bedrock Agent
 
-Upgraded the architecture from a single orchestrating Lambda to a native
-**Amazon Bedrock Agent** that owns the reasoning loop itself:
+![Bedrock Agent AWS Architecture](docs/aws-architecture-diagram.png)
 
-- Agent (Claude Sonnet 4.5) interprets the request and decides which tools to call
+Upgraded the architecture from a single orchestrating Lambda to a native Amazon Bedrock Agent that owns the reasoning loop itself:
+
+- Agent (tested with both Claude Sonnet 4.5 and Amazon Nova Pro) interprets the request and decides which tools to call
 - Knowledge Base association for automatic SOP retrieval
-- Action group (Lambda) exposing `createWorkOrder` and `checkFaultHistory` as
-  callable tools, defined via OpenAPI schema (`agent/action-group-schema.json`)
+- Action group (Lambda) exposing `createWorkOrder` and `checkFaultHistory` as callable tools, defined via OpenAPI schema (`agent/action-group-schema.json`)
 
-This shifts orchestration logic from hardcoded Python control flow into the
-agent's own planning — the architectural difference between "an app that calls
-an LLM" and "an actual agent."
+This shifts orchestration logic from hardcoded Python control flow into the agent's own planning — the architectural difference between "an app that calls an LLM" and "an actual agent." Verified via trace logs: the agent correctly planned and executed parallel tool calls (Knowledge Base search + fault history lookup) without explicit sequencing in code.
 
-Status: action group + knowledge base wired and tested; finishing AWS Marketplace
-billing verification for full model invocation.
+### Known limitation: Knowledge Base vector store compatibility
+
+As of the AWS console's current Knowledge Base creation flow (June 2026), quick-create only offers a **"Managed vector store"** type (`knowledgeBaseConfiguration.type: MANAGED`), with no UI option to select Amazon OpenSearch Serverless directly. This was confirmed via:
+
+```bash
+aws bedrock-agent get-knowledge-base --knowledge-base-id 
+# → "knowledgeBaseConfiguration": { "type": "MANAGED" }
+```
+
+The Bedrock Agents `associate-agent-knowledge-base` / retrieval API currently expects the legacy `vectorSearchConfiguration` shape, which is incompatible with this newer managed type, producing:
+Incompatible configuration: vectorSearchConfiguration is not supported for
+
+managed knowledge bases. Use managedSearchConfiguration instead.
+This reproduced consistently across two independently created Knowledge Bases and two different foundation models (Claude Sonnet 4.5 and Amazon Nova Pro) — isolating the failure to the Knowledge Base storage layer, not the agent's model or orchestration logic, which was independently verified working via full trace inspection.
+
+**Workaround (documented, not yet executed):** create the Knowledge Base via the `bedrock-agent create-knowledge-base` API directly, explicitly specifying `storageConfiguration.type: OPENSEARCH_SERVERLESS` against a manually provisioned OpenSearch Serverless collection (collection, encryption policy, network policy, and vector index created ahead of time) — bypassing the console's quick-create flow, which currently defaults to the incompatible managed type.
+
+### Status
+
+- Lambda-orchestrated agent (Part 1): fully functional, tested end-to-end with real Bedrock model output
+- Bedrock Agent (Part 2): action group and agent orchestration fully built and verified via trace logs (tool planning, parallel calls, correct reasoning); Knowledge Base retrieval blocked by the platform-level compatibility gap above; resolution path identified and documented
+
