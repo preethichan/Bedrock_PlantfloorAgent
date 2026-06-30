@@ -4,6 +4,9 @@ Real AWS Bedrock-based agentic pipeline for industrial fault triage, built for
 Automotive & Manufacturing use cases.
 
 ## Architecture
+
+![Bedrock Agent Architecture](docs/architecture-diagram.png)
+
 - **S3**: stores maintenance SOP documents
 - **Amazon Bedrock Knowledge Base** (OpenSearch Serverless vector store): RAG retrieval over SOPs
 - **AWS Lambda**: orchestrates fault detection, KB retrieval, and reasoning
